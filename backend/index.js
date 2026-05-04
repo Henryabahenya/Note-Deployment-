@@ -4,23 +4,23 @@ const morgan = require('morgan')
 
 const app = express()
 
-// 1. Instantiations and Configurations (if any)
-// 2. Middlewares (place here before the routes)
+// 1. Middlewares
 app.use(cors())
 app.use(express.json())
 app.use(morgan('tiny'))
 
-// 3. API Routes MUST come before express.static to prevent intercepting
-app.get('/', (req, res) => {
-  res.send('Hello World')
-})
-
+// 2. Data
 let notes = [
   { id: '1', content: 'Boss', important: true },
   { id: '2', content: 'Henry', important: false },
   { id: '3', content: 'Kg', important: true },
   { id: '4', content: 'Chris', important: false }
 ]
+
+// 3. API Routes (Defined FIRST)
+app.get('/', (req, res) => {
+  res.send('Hello World')
+})
 
 app.get('/api/notes/:id', (req, res) => {
   const id = req.params.id
@@ -53,7 +53,7 @@ app.post('/api/notes', (req, res) => {
   const body = req.body
 
   if (!body.content) {
-    return res.status(400).json({ // Use .json() instead of .end() for errors
+    return res.status(400).json({
       error: 'content missing'
     })
   }
@@ -68,7 +68,7 @@ app.post('/api/notes', (req, res) => {
   res.json(note)
 })
 
-// 4. Static Middleware is placed LAST, right before the server listens
+// 4. Static Middleware (Served LAST, right before the port)
 app.use(express.static('dist'))
 
 const PORT = process.env.PORT || 3001
