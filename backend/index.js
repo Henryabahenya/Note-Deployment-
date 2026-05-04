@@ -1,15 +1,12 @@
 const express = require('express')
 const cors = require('cors')
-const morgan = require('morgan')
-
 const app = express()
 
-// 1. Middlewares
+// Minimal necessary middlewares
 app.use(cors())
 app.use(express.json())
-app.use(morgan('tiny'))
+app.use(express.static('dist'))
 
-// 2. Data
 let notes = [
   { id: '1', content: 'Boss', important: true },
   { id: '2', content: 'Henry', important: false },
@@ -17,14 +14,17 @@ let notes = [
   { id: '4', content: 'Chris', important: false }
 ]
 
-// 3. API Routes (Defined FIRST)
 app.get('/', (req, res) => {
   res.send('Hello World')
 })
 
+app.get('/api/notes', (req, res) => {
+  res.json(notes)
+})
+
 app.get('/api/notes/:id', (req, res) => {
   const id = req.params.id
-  const note = notes.find(note => note.id === id)
+  const note = notes.find(n => n.id === id)
   if (note) {
     res.json(note)
   } else {
@@ -32,13 +32,9 @@ app.get('/api/notes/:id', (req, res) => {
   }
 })
 
-app.get('/api/notes', (req, res) => {
-  res.json(notes)
-})
-
 app.delete('/api/notes/:id', (req, res) => {
   const id = req.params.id
-  notes = notes.filter(note => note.id !== id)
+  notes = notes.filter(n => n.id !== id)
   res.status(204).end()
 })
 
@@ -63,13 +59,10 @@ app.post('/api/notes', (req, res) => {
     important: body.important || false,
     id: generateId()
   }
+
   notes = notes.concat(note)
-  console.log(note)
   res.json(note)
 })
-
-// 4. Static Middleware (Served LAST, right before the port)
-app.use(express.static('dist'))
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
