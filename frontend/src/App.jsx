@@ -5,7 +5,7 @@ import noteService from './services/notes'
 
 const Note = ({note,toggleImportance})=>{
 const label= note.important
-?'make not imporntant' : 'make note important'
+?'make not important' : 'make note important'
 
 return(
   <li>
@@ -28,7 +28,7 @@ const App = () => {
     .then(initialNotes=> {
       setNotes(initialNotes)
     })
-  })
+  }, [])
 
 
 const toggleImportanceOf = id => {
