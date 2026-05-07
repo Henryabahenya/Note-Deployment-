@@ -15,7 +15,7 @@ let notes = [
 ]
 
 app.get('/', (req, res) => {
-  res.send('Hello World')
+  res.json(notes)
 })
 
 app.get('/api/notes', (req, res) => {
