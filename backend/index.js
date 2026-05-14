@@ -1,69 +1,91 @@
+require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
+const Note = require('./models/note')
+const morgan = require('morgan')
 const app = express()
 
-// Minimal necessary middlewares
+// 1. MIDDLEWARES (The "Pipeline")
 app.use(cors())
-app.use(express.json())
-
 app.use(express.static('dist'))
+app.use(express.json()) // This MUST be above routes to fix the 'content' error
+app.use(morgan('tiny'))
 
-let notes = [
-  { id: '1', content: 'Boss', important: true },
-  { id: '2', content: 'Henry', important: false },
-  { id: '3', content: 'Kg', important: true },
-  { id: '4', content: 'Chris', important: false }
-]
+// 2. ROUTES
 
-app.get('/', (req, res) => {
-  res.json(notes)
+app.get('/', (request, response) => {
+  response.send('<h1>Hello World!</h1>')
 })
 
 
-
-app.get('/api/notes/:id', (req, res) => {
-  const id = req.params.id
-  const note = notes.find(n => n.id === id)
-  if (note) {
-    res.json(note)
-  } else {
-    res.status(404).end()
-  }
+app.get('/api/notes', (request, response) => {
+  Note.find({}).then((notes) => {
+    response.json(notes)
+  })
 })
 
-app.delete('/api/notes/:id', (req, res) => {
-  const id = req.params.id
-  notes = notes.filter(n => n.id !== id)
-  res.status(204).end()
+app.get('/api/notes/:id', (request, response) => {
+  Note.findById(request.params.id)
+    .then(note => {
+      if (note) {
+        response.json(note)
+      } else {
+        response.status(404).end()
+      }
+    })
+    .catch(error => {
+      console.log(error)
+      response.status(400).send({ error: 'malformatted id' })
+    })
 })
 
-const generateId = () => {
-  const maxId = notes.length > 0
-    ? Math.max(...notes.map(n => Number(n.id)))
-    : 0
-  return String(maxId + 1)
-}
-
-app.post('/api/notes', (req, res) => {
-  const body = req.body
+app.post('/api/notes', (request, response) => {
+  const body = request.body
 
   if (!body.content) {
-    return res.status(400).json({
-      error: 'content missing'
-    })
+    return response.status(400).json({ error: 'content missing' })
   }
 
-  const note = {
+  const note = new Note({
     content: body.content,
     important: body.important || false,
-    id: generateId()
-  }
+  })
 
-  notes = notes.concat(note)
-  res.json(note)
+  note.save().then(savedNote => {
+    response.json(savedNote)
+  })
 })
 
+app.delete('/api/notes/:id', (request, response, next) => {
+  Note.findByIdAndDelete(request.params.id)
+    .then(result => {
+      response.status(204).end()
+    })
+    .catch(error => next(error))
+})
+
+
+app.put('/api/notes/:id', (request, response, next) => {
+  const { content, important } = request.body
+
+  Note.findById(request.params.id)
+    .then(note => {
+      if (!note) {
+        return response.status(404).end()
+      }
+
+      note.content = content
+      note.important = important
+
+      return note.save().then((updatedNote) => {
+        response.json(updatedNote)
+      })
+    })
+    .catch(error => next(error))
+})
+
+// 3. START SERVER (Always at the very bottom)
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
-  console.log(`Server is running on ${PORT}`)
+    console.log(`Server running on port ${PORT}`)
 })
